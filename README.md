@@ -4,8 +4,9 @@ This Google Apps Script automates sending daily markdown content from Google Dri
 
 ## Features
 - Fetches markdown files named `Day 1.md`, `Day 2.md`, etc., from a designated Google Drive folder.
-- Sends content to Pumble using the Marketplace API Key Addon.
-- Runs automated daily updates for the first 41 days of the year.
+-   Sends content to Pumble using the Marketplace API Key Addon.
+-   **Automatic Message Splitting**: Automatically handles content exceeding the 10,000 character limit by splitting it into multiple messages at word boundaries with ellipses for continuity.
+-   Runs automated daily updates for the first 41 days of the year.
 - Includes a test mode to verify integration.
 
 ## Setup Instructions

@@ -35,10 +35,52 @@ function getMarkdownContent(dayNumber) {
 
 /**
  * Sends a message to a Pumble channel using the Pumble API.
+ * Handles content exceeding the 10,000 character limit by splitting it into multiple messages.
  * @param {string} content The message content to send.
  * @param {boolean} [isTest=false] Whether this is a test message.
  */
 function sendPumbleMessage(content, isTest = false) {
+  if (isTest) {
+    content = `# TEST\n\n${content}`;
+  }
+
+  const MAX_LENGTH = 10000;
+  const ELLIPSIS = '...';
+  const CHUNK_LIMIT = MAX_LENGTH - ELLIPSIS.length;
+
+  if (content.length <= MAX_LENGTH) {
+    _postToPumble(content);
+    return;
+  }
+
+  let remainingContent = content;
+  while (remainingContent.length > 0) {
+    let chunk;
+    if (remainingContent.length <= MAX_LENGTH) {
+      chunk = remainingContent;
+      remainingContent = '';
+    } else {
+      // Find the last space within the CHUNK_LIMIT
+      let splitIndex = remainingContent.lastIndexOf(' ', CHUNK_LIMIT);
+      
+      // If no space found, force split at CHUNK_LIMIT
+      if (splitIndex === -1) {
+        splitIndex = CHUNK_LIMIT;
+      }
+
+      chunk = remainingContent.substring(0, splitIndex).trimEnd() + ELLIPSIS;
+      remainingContent = remainingContent.substring(splitIndex).trimStart();
+    }
+    _postToPumble(chunk);
+  }
+}
+
+/**
+ * Internal helper to perform the actual Pumble API POST request.
+ * @param {string} content The content to post.
+ * @private
+ */
+function _postToPumble(content) {
   const apiKey = getPumbleApiKey();
   const url = 'https://pumble-api-keys.addons.marketplace.cake.com/sendMessage';
   
@@ -46,22 +88,18 @@ function sendPumbleMessage(content, isTest = false) {
   if (!channelId) {
     throw new Error('PUMBLE_CHANNEL_ID not found in Script Properties. Please set it manually.');
   }
-  
-  if (isTest) {
-    content = `# TEST\n\n${content.substring(0, 300)}...`;
-  }
 
   const payload = {
     'channel': channelId,
     'text': content,
-    'asBot': false // User mentioned Pumble API key, typically used with the addon to send as bot or user.
+    'asBot': false
   };
 
   const options = {
     'method': 'post',
     'contentType': 'application/json',
     'headers': {
-      'Api-Key': apiKey // Research indicates x-api-key might be used for this addon
+      'Api-Key': apiKey
     },
     'payload': JSON.stringify(payload),
     'muteHttpExceptions': true
